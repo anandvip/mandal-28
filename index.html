@@ -81,6 +81,7 @@
             color: var(--text-color);
             cursor: pointer;
             transition: background-color 0.3s;
+            position: relative;
         }
         
         .session-button.completed {
@@ -145,6 +146,17 @@
             top: 10px;
             right: 10px;
         }
+
+        .note-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 10px;
+            height: 10px;
+            background-color: orange;
+            border-radius: 50%;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -201,7 +213,9 @@
             <button onclick="saveNotes()">Save Notes</button>
         </div>
     </div>
-
+<footer>
+    hereis <a href="./intro.html" target="_blank">how to use this meditastion tracker</a>
+</footer>
     <script>
         let trackerData = {
             mandalaName: '',
@@ -255,9 +269,13 @@
                 row.innerHTML = `
                     <span>Day ${i + 1} [${date.toLocaleDateString()}]: </span>
                     <div>
-                        <button class="session-button" onclick="toggleSession(${i * 2})">M</button>
+                        <button class="session-button" onclick="toggleSession(${i * 2})">M
+                            <div class="note-indicator" id="note-indicator-${i * 2}"></div>
+                        </button>
                         <span class="notes-icon" onclick="openNotesModal(${i * 2})">📝</span>
-                        <button class="session-button" onclick="toggleSession(${i * 2 + 1})">E</button>
+                        <button class="session-button" onclick="toggleSession(${i * 2 + 1})">E
+                            <div class="note-indicator" id="note-indicator-${i * 2 + 1}"></div>
+                        </button>
                         <span class="notes-icon" onclick="openNotesModal(${i * 2 + 1})">📝</span>
                     </div>
                 `;
@@ -282,6 +300,8 @@
             const buttons = document.querySelectorAll('.session-button');
             buttons.forEach((button, index) => {
                 button.classList.toggle('completed', trackerData.sessions[index].completed);
+                const noteIndicator = button.querySelector('.note-indicator');
+                noteIndicator.style.display = trackerData.sessions[index].notes ? 'block' : 'none';
             });
         }
 
@@ -359,196 +379,197 @@
             const textarea = document.getElementById('sessionNotes');
             trackerData.sessions[index].notes = textarea.value;
             modal.style.display = 'none';
+            updateSessionDisplay();
             saveToLocalStorage();
         }
 
-       function exportData() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackerData));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "meditation_tracker_data.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    }
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackerData));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "meditation_tracker_data.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
 
-    function updateDetailedStats() {
-        const statsContainer = document.getElementById('statsContainer');
-        statsContainer.innerHTML = '';
+        function updateDetailedStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = '';
 
-        const totalSessions = trackerData.sessions.length;
-        const completedSessions = trackerData.sessions.filter(s => s.completed).length;
-        const completionRate = (completedSessions / totalSessions * 100).toFixed(2);
+            const totalSessions = trackerData.sessions.length;
+            const completedSessions = trackerData.sessions.filter(s => s.completed).length;
+           const completionRate = (completedSessions / totalSessions * 100).toFixed(2);
 
-        const morningCompletions = trackerData.sessions.filter((s, i) => i % 2 === 0 && s.completed).length;
-        const eveningCompletions = trackerData.sessions.filter((s, i) => i % 2 !== 0 && s.completed).length;
+            const morningCompletions = trackerData.sessions.filter((s, i) => i % 2 === 0 && s.completed).length;
+            const eveningCompletions = trackerData.sessions.filter((s, i) => i % 2 !== 0 && s.completed).length;
 
-        const { hours, minutes } = calculateTotalMeditationTime();
-        const totalDays = Math.ceil((new Date() - trackerData.startDate) / (1000 * 60 * 60 * 24));
-        const daysLeft = calculateDaysLeft();
+            const { hours, minutes } = calculateTotalMeditationTime();
+            const totalDays = Math.ceil((new Date() - trackerData.startDate) / (1000 * 60 * 60 * 24));
+            const daysLeft = calculateDaysLeft();
 
-        const stats = [
-            { label: 'Completion Rate', value: `${completionRate}%` },
-            { label: 'Morning Sessions', value: morningCompletions },
-            { label: 'Evening Sessions', value: eveningCompletions },
-            { label: 'Longest Streak', value: calculateLongestStreak() },
-            { label: 'Total Meditation Time', value: `${hours} hours and ${minutes} minutes` },
-            { label: 'Average Daily Meditation', value: `${((hours * 60 + minutes) / totalDays).toFixed(2)} minutes` },
-            { label: 'Days in Practice', value: totalDays },
-            { label: 'Days Left to Completion', value: daysLeft }
-        ];
+            const stats = [
+                { label: 'Completion Rate', value: `${completionRate}%` },
+                { label: 'Morning Sessions', value: morningCompletions },
+                { label: 'Evening Sessions', value: eveningCompletions },
+                { label: 'Longest Streak', value: calculateLongestStreak() },
+                { label: 'Total Meditation Time', value: `${hours} hours and ${minutes} minutes` },
+                { label: 'Average Daily Meditation', value: `${((hours * 60 + minutes) / totalDays).toFixed(2)} minutes` },
+                { label: 'Days in Practice', value: totalDays },
+                { label: 'Days Left to Completion', value: daysLeft }
+            ];
 
-        stats.forEach(stat => {
-            const statBox = document.createElement('div');
-            statBox.innerHTML = `<h3>${stat.label}</h3><p>${stat.value}</p>`;
-            statsContainer.appendChild(statBox);
-        });
-    }
+            stats.forEach(stat => {
+                const statBox = document.createElement('div');
+                statBox.innerHTML = `<h3>${stat.label}</h3><p>${stat.value}</p>`;
+                statsContainer.appendChild(statBox);
+            });
+        }
 
-    function calculateLongestStreak() {
-        let currentStreak = 0;
-        let longestStreak = 0;
+        function calculateLongestStreak() {
+            let currentStreak = 0;
+            let longestStreak = 0;
 
-        for (let i = 0; i < trackerData.sessions.length; i += 2) {
-            if (trackerData.sessions[i].completed && trackerData.sessions[i + 1].completed) {
-                currentStreak++;
-                longestStreak = Math.max(longestStreak, currentStreak);
-            } else {
-                currentStreak = 0;
+            for (let i = 0; i < trackerData.sessions.length; i += 2) {
+                if (trackerData.sessions[i].completed && trackerData.sessions[i + 1].completed) {
+                    currentStreak++;
+                    longestStreak = Math.max(longestStreak, currentStreak);
+                } else {
+                    currentStreak = 0;
+                }
+            }
+
+            return longestStreak;
+        }
+
+        function calculateTotalMeditationTime() {
+            const completedSessions = trackerData.sessions.filter(s => s.completed).length;
+            const totalMinutes = completedSessions * 16; // Assuming average of 16 minutes per session
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return { hours, minutes };
+        }
+
+        function calculateDaysLeft() {
+            const today = new Date();
+            const daysLeft = Math.max(0, Math.ceil((trackerData.endDate - today) / (1000 * 60 * 60 * 24)));
+            return daysLeft;
+        }
+
+        function checkMilestones() {
+            const completedSessions = trackerData.sessions.filter(s => s.completed).length;
+            const milestones = [
+                { threshold: 7, message: "You've completed your first week! Keep up the great work!" },
+                { threshold: 30, message: "30 days of meditation! You're building a fantastic habit." },
+                { threshold: 60, message: "60 days! Your dedication is truly inspiring." },
+                { threshold: 90, message: "90 days of consistent practice! You're a meditation master!" }
+            ];
+
+            const achievedMilestone = milestones.find(m => completedSessions === m.threshold * 2);
+            if (achievedMilestone) {
+                alert(achievedMilestone.message);
             }
         }
 
-        return longestStreak;
-    }
+        function updateGuidedMeditation() {
+            const prompts = [
+                "Focus on your breath, feeling the rise and fall of your chest.",
+                "Scan your body from head to toe, releasing tension as you go.",
+                "Visualize a peaceful place and immerse yourself in the details.",
+                "Practice loving-kindness meditation, sending good wishes to others.",
+                "Observe your thoughts without judgment, letting them pass like clouds."
+            ];
 
-    function calculateTotalMeditationTime() {
-        const completedSessions = trackerData.sessions.filter(s => s.completed).length;
-        const totalMinutes = completedSessions * 16; // Assuming average of 16 minutes per session
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return { hours, minutes };
-    }
+            const audioFiles = [
+                "meditation1.mp3",
+                "meditation2.mp3",
+                "meditation3.mp3",
+                "meditation4.mp3",
+                "meditation5.mp3"
+            ];
 
-    function calculateDaysLeft() {
-        const today = new Date();
-        const daysLeft = Math.max(0, Math.ceil((trackerData.endDate - today) / (1000 * 60 * 60 * 24)));
-        return daysLeft;
-    }
-
-    function checkMilestones() {
-        const completedSessions = trackerData.sessions.filter(s => s.completed).length;
-        const milestones = [
-            { threshold: 7, message: "You've completed your first week! Keep up the great work!" },
-            { threshold: 30, message: "30 days of meditation! You're building a fantastic habit." },
-            { threshold: 60, message: "60 days! Your dedication is truly inspiring." },
-            { threshold: 90, message: "90 days of consistent practice! You're a meditation master!" }
-        ];
-
-        const achievedMilestone = milestones.find(m => completedSessions === m.threshold * 2);
-        if (achievedMilestone) {
-            alert(achievedMilestone.message);
+            const index = Math.floor(Math.random() * prompts.length);
+            document.getElementById('meditationPrompt').textContent = prompts[index];
+            document.getElementById('meditationAudio').src = audioFiles[index];
         }
-    }
 
-    function updateGuidedMeditation() {
-        const prompts = [
-            "Focus on your breath, feeling the rise and fall of your chest.",
-            "Scan your body from head to toe, releasing tension as you go.",
-            "Visualize a peaceful place and immerse yourself in the details.",
-            "Practice loving-kindness meditation, sending good wishes to others.",
-            "Observe your thoughts without judgment, letting them pass like clouds."
-        ];
-
-        const audioFiles = [
-            "meditation1.mp3",
-            "meditation2.mp3",
-            "meditation3.mp3",
-            "meditation4.mp3",
-            "meditation5.mp3"
-        ];
-
-        const index = Math.floor(Math.random() * prompts.length);
-        document.getElementById('meditationPrompt').textContent = prompts[index];
-        document.getElementById('meditationAudio').src = audioFiles[index];
-    }
-
-    function shareProgress() {
-        const completedSessions = trackerData.sessions.filter(s => s.completed).length;
-        const totalSessions = trackerData.sessions.length;
-        const { hours, minutes } = calculateTotalMeditationTime();
-        const shareText = `I've completed ${completedSessions} out of ${totalSessions} meditation sessions (${hours} hours and ${minutes} minutes) in my "${trackerData.mandalaName}" practice! #MeditationChallenge`;
-        
-        // This is a simple implementation. In a real-world scenario, you'd integrate with social media APIs.
-        alert("Sharing: " + shareText);
-    }
-
-    function setDailyReminder() {
-        if ("Notification" in window) {
-            Notification.requestPermission().then(function (permission) {
-                if (permission === "granted") {
-                    // This is a simple implementation. In a real-world scenario, you'd use a service worker for more reliable notifications.
-                    setInterval(() => {
-                        const now = new Date();
-                        if (now.getHours() === 8) { // Morning reminder at 8 AM
-                            new Notification("Meditation Reminder", { body: "Time for your morning meditation session!" });
-                        } else if (now.getHours() === 20) { // Evening reminder at 8 PM
-                            new Notification("Meditation Reminder", { body: "Time for your evening meditation session!" });
-                        }
-                    }, 3600000); // Check every hour
-                }
-            });
+        function shareProgress() {
+            const completedSessions = trackerData.sessions.filter(s => s.completed).length;
+            const totalSessions = trackerData.sessions.length;
+            const { hours, minutes } = calculateTotalMeditationTime();
+            const shareText = `I've completed ${completedSessions} out of ${totalSessions} meditation sessions (${hours} hours and ${minutes} minutes) in my "${trackerData.mandalaName}" practice! #MeditationChallenge`;
+            
+            // This is a simple implementation. In a real-world scenario, you'd integrate with social media APIs.
+            alert("Sharing: " + shareText);
         }
-    }
 
-    function saveToLocalStorage() {
-        localStorage.setItem('meditationTrackerData', JSON.stringify(trackerData));
-    }
-
-    function loadFromLocalStorage() {
-        const savedData = localStorage.getItem('meditationTrackerData');
-        if (savedData) {
-            trackerData = JSON.parse(savedData);
-            trackerData.startDate = new Date(trackerData.startDate);
-            trackerData.endDate = new Date(trackerData.endDate);
-            updateDashboard();
-            generateTracker();
-            updateWeeklyOverview();
-            updateDetailedStats();
-            updateGuidedMeditation();
-            document.getElementById('setup').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('tracker').style.display = 'block';
-            document.getElementById('weeklyOverview').style.display = 'block';
-            document.getElementById('stats').style.display = 'block';
-            document.getElementById('guidedMeditation').style.display = 'block';
-            document.getElementById('shareButton').style.display = 'block';
+        function setDailyReminder() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === "granted") {
+                        // This is a simple implementation. In a real-world scenario, you'd use a service worker for more reliable notifications.
+                        setInterval(() => {
+                            const now = new Date();
+                            if (now.getHours() === 8) { // Morning reminder at 8 AM
+                                new Notification("Meditation Reminder", { body: "Time for your morning meditation session!" });
+                            } else if (now.getHours() === 20) { // Evening reminder at 8 PM
+                                new Notification("Meditation Reminder", { body: "Time for your evening meditation session!" });
+                            }
+                        }, 3600000); // Check every hour
+                    }
+                });
+            }
         }
-    }
 
-    function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        saveToLocalStorage();
-    }
-
-    // Event listeners
-    document.querySelector('.close').onclick = function() {
-        document.getElementById('notesModal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-        const modal = document.getElementById('notesModal');
-        if (event.target == modal) {
-            modal.style.display = 'none';
+        function saveToLocalStorage() {
+            localStorage.setItem('meditationTrackerData', JSON.stringify(trackerData));
         }
-    }
 
-    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('meditationTrackerData');
+            if (savedData) {
+                trackerData = JSON.parse(savedData);
+                trackerData.startDate = new Date(trackerData.startDate);
+                trackerData.endDate = new Date(trackerData.endDate);
+                updateDashboard();
+                generateTracker();
+                updateWeeklyOverview();
+                updateDetailedStats();
+                updateGuidedMeditation();
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('tracker').style.display = 'block';
+                document.getElementById('weeklyOverview').style.display = 'block';
+                document.getElementById('stats').style.display = 'block';
+                document.getElementById('guidedMeditation').style.display = 'block';
+                document.getElementById('shareButton').style.display = 'block';
+            }
+        }
 
-    // Initialize the application
-    loadFromLocalStorage();
-    if (!trackerData.startDate) {
-        document.getElementById('startDate').valueAsDate = new Date();
-    }
-</script>
-  </body
-  </html>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            saveToLocalStorage();
+        }
+
+        // Event listeners
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('notesModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('notesModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        // Initialize the application
+        loadFromLocalStorage();
+        if (!trackerData.startDate) {
+            document.getElementById('startDate').valueAsDate = new Date();
+        }
+    </script>
+</body>
+</html>
